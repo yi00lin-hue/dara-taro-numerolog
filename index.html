@@ -193,6 +193,9 @@
   .review-form input:focus,.review-form textarea:focus{outline:none;border-color:var(--accent)}
   .review-form textarea{min-height:110px;resize:vertical}
   .review-form .btn{width:100%;text-align:center;border:none;cursor:pointer}
+  .review-form .btn{width:100%;text-align:center;border:none;cursor:pointer;margin-bottom:.9rem}
+  .form-wrap{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--bg-soft)}
+  .form-wrap iframe{display:block;border:0;background:transparent}
   .thanks{display:none;margin-top:.9rem;background:var(--accent-soft);border:1px solid var(--accent);border-radius:10px;padding:.75rem .95rem;font-size:.88rem;color:var(--ink)}
   .thanks .mini-btn{margin-top:.55rem;display:inline-block;background:var(--accent);color:#221a12;border:none;border-radius:999px;padding:.5rem 1.05rem;cursor:pointer;font-weight:600;font-size:.8rem}
   .thanks .mini-btn:hover{background:var(--accent-bright)}
@@ -507,20 +510,10 @@
 
     <div class="review-form">
       <h3>Оставить отзыв</h3>
-      <div class="stars-picker" id="starsPicker" role="radiogroup" aria-label="Оценка от 1 до 5">
-        <button type="button" data-v="1" aria-label="1 полумесяц">☾</button>
-        <button type="button" data-v="2" aria-label="2 полумесяца">☾</button>
-        <button type="button" data-v="3" aria-label="3 полумесяца">☾</button>
-        <button type="button" data-v="4" aria-label="4 полумесяца">☾</button>
-        <button type="button" data-v="5" aria-label="5 полумесяцев">☾</button>
-      </div>
-      <p class="rating-hint" id="ratingHint">Нажмите на полумесяц, чтобы выбрать оценку</p>
-      <input type="text" id="revName" placeholder="Ваше имя" maxlength="40">
-      <textarea id="revText" placeholder="Ваш отзыв — что понравилось, что можно улучшить..." maxlength="600"></textarea>
-      <button class="btn btn-primary" id="revSend" type="button">Отправить отзыв</button>
-      <div class="thanks" id="revThanks">
-        Спасибо за отзыв! Он сохранён на этой странице. Хотите, чтобы Дарья увидела его лично?
-        <button type="button" class="mini-btn" id="revToTg">Отправить в Телеграм</button>
+      <p>Заполните короткую форму — отзыв попадёт прямо ко мне:</p>
+      <a class="btn btn-primary" href="https://forms.yandex.ru/u/6aadb4f502848f4dd0642e1d/" target="_blank" rel="noopener" style="text-align:center;display:block">Оставить отзыв</a>
+      <div class="form-wrap">
+        <iframe src="https://forms.yandex.ru/u/6aadb4f502848f4dd0642e1d/?iframe=1" width="100%" height="440" frameborder="0" loading="lazy" title="Форма отзыва"></iframe>
       </div>
     </div>
   </div>
@@ -537,19 +530,11 @@
 </main>
 <script>
 (function(){
-  var KEY='dara_reviews_v1';
-  var stars=0;
-  var picker=document.getElementById('starsPicker');
-  var hint=document.getElementById('ratingHint');
-  var btns=picker.querySelectorAll('button');
   var list=document.getElementById('reviewList');
-  var nameEl=document.getElementById('revName');
-  var textEl=document.getElementById('revText');
-  var send=document.getElementById('revSend');
-  var thanks=document.getElementById('revThanks');
 
-  function load(){try{return JSON.parse(localStorage.getItem(KEY))||[]}catch(e){return[]}}
-  function save(a){try{localStorage.setItem(KEY,JSON.stringify(a))}catch(e){}}
+  var REVIEWS=[
+    // {s:5, n:'Имя', t:'Текст отзыва', d:'12 марта 2026'}
+  ];
 
   function starsHtml(n){
     var s='';
@@ -559,58 +544,19 @@
   function esc(t){var d=document.createElement('div');d.textContent=t;return d.innerHTML}
 
   function render(){
-    var a=load();
     list.innerHTML='';
-    if(!a.length){list.innerHTML='<div class="empty">Отзывов пока нет — станьте первым!</div>';return}
-    for(var i=a.length-1;i>=0;i--){
-      var r=a[i];
+    if(!REVIEWS.length){list.innerHTML='<div class="empty">Отзывов пока нет — станьте первым!</div>';return}
+    for(var i=REVIEWS.length-1;i>=0;i--){
+      var r=REVIEWS[i];
       var el=document.createElement('div');
       el.className='review-card';
       el.innerHTML='<div class="stars">'+starsHtml(r.s)+'</div>'+
         '<h4>'+esc(r.n||'Аноним')+'</h4>'+
-        '<div class="date">'+esc(r.d)+'</div>'+
+        (r.d?'<div class="date">'+esc(r.d)+'</div>':'')+
         (r.t?'<p>'+esc(r.t)+'</p>':'');
       list.appendChild(el);
     }
   }
-
-  function paint(){
-    for(var i=0;i<btns.length;i++){
-      btns[i].classList.toggle('on', i<stars);
-    }
-  }
-
-  picker.addEventListener('click',function(e){
-    var b=e.target.closest('button');if(!b)return;
-    stars=parseInt(b.getAttribute('data-v'),10);
-    paint();
-    var labels={1:'1 полумесяц',2:'2 полумесяца',3:'3 полумесяца',4:'4 полумесяца',5:'5 полумесяцев'};
-    hint.textContent='Выбрано: '+labels[stars];
-  });
-
-  send.addEventListener('click',function(){
-    var t=textEl.value.trim();
-    if(!stars){hint.textContent='Пожалуйста, сначала выберите оценку';return}
-    if(!t){alert('Напишите пару слов об услуге');textEl.focus();return}
-    var a=load();
-    var now=new Date();
-    a.push({s:stars,n:nameEl.value.trim(),t:t,d:now.toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'})});
-    save(a);
-    render();
-    thanks.style.display='block';
-    send.style.display='none';
-    nameEl.value='';textEl.value='';
-  });
-
-  var sentText='';
-  document.getElementById('revToTg').addEventListener('click',function(){
-    var a=load();if(!a.length)return;
-    var r=a[a.length-1];
-    var label={5:'5 полумесяцев',4:'4 полумесяца',3:'3 полумесяца',2:'2 полумесяца',1:'1 полумесяц'}[r.s];
-    sentText='Отзыв для Дарьи:\nОценка: '+label+' ('+r.s+'/5)\nИмя: '+(r.n||'Аноним')+'\nОтзыв: '+r.t+'\nДата: '+r.d;
-    var url='https://t.me/share/url?url='+encodeURIComponent('https://t.me/el_yria5')+'&text='+encodeURIComponent(sentText);
-    window.open(url,'_blank','noopener');
-  });
 
   render();
 })();
